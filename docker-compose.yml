@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+     DATABASE_URL=postgresql+psycopg2://srisht1121:1213@postgres:5432/noti
+      - RABBITMQ_BROKER=amqp://guest:guest@rabbitmq:5672//
+    depends_on: [postgres, rabbitmq]
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: .
+    command: celery -A app.broker.celery_app worker -Q notifications --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://srisht1121:1213@postgres:5432/noti
+      - RABBITMQ_BROKER=amqp://guest:guest@rabbitmq:5672//
+    depends_on: [postgres, rabbitmq]
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notifs
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
